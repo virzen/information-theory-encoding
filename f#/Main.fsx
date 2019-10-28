@@ -33,7 +33,23 @@ let parseBinaryFileToInts binaryLength filename =
   |> Array.map System.String
   |> Array.map binaryToInt
 
+type ByteOccurences = Map<int, int>
 
+let incrementCountOfByte map (byte: int) =
+  let maybePreviousOccurences = Map.tryFind byte map
+  
+  let newOccurences = 
+    match maybePreviousOccurences with
+      | Some x -> x + 1
+      | None -> 1
+
+  Map.add byte newOccurences map
+
+
+let countOccurences (bytes: int[]): ByteOccurences =
+    Array.fold incrementCountOfByte Map.empty bytes
+
+// MAIN
 
 inputFilename
   |> parseFileToBinary
@@ -41,6 +57,7 @@ inputFilename
 
 binaryFilename
   |> parseBinaryFileToInts 8
+  |> countOccurences
   |> printf "%A"
 
 // TODO: accumulate results in a map
