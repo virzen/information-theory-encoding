@@ -1,4 +1,4 @@
-open System.IO
+﻿open System.IO
 open System
 
 let inputFilename = "116-binary-tree.pdf"
@@ -61,32 +61,35 @@ let distribution (values: int[]): Distribution =
     Array.fold incrementCountOf Map.empty values
 
 
-// MAIN
+[<EntryPoint>]
+let main argv =
+    inputFilename
+      |> readFileAsBytes
+      |> bytesToBinaryOfWordLength 8
+      |> writeToFile binaryFilename
 
-inputFilename
-  |> readFileAsBytes
-  |> bytesToBinaryOfWordLength 8
-  |> writeToFile binaryFilename
+    binaryFilename
+      |> readFileAsBinary
+      |> binaryOfWordLengthToInts 8
+      |> printf "%A"
 
-binaryFilename
-  |> readFileAsBinary
-  |> binaryOfWordLengthToInts 8
-  |> printf "%A"
+    binaryFilename
+      |> readFileAsBinary
+      |> binaryOfWordLengthToInts 8
+      |> distribution
+      |> printf "%A"
 
-binaryFilename
-  |> readFileAsBinary
-  |> binaryOfWordLengthToInts 8
-  |> distribution
-  |> printf "%A"
+    binaryFilename
+      |> readFileAsBinary
+      |> binaryOfWordLengthToInts 4
+      |> distribution
+      |> printf "%A"
 
-binaryFilename
-  |> readFileAsBinary
-  |> binaryOfWordLengthToInts 4
-  |> distribution
-  |> printf "%A"
+    binaryFilename
+      |> readFileAsBinary
+      |> binaryOfWordLengthToInts 1
+      |> distribution
+      |> printf "%A"
 
-binaryFilename
-  |> readFileAsBinary
-  |> binaryOfWordLengthToInts 1
-  |> distribution
-  |> printf "%A"
+
+    0 // return an integer exit code
