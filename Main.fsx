@@ -49,8 +49,8 @@ type Distribution = Map<int, int>
 
 let incrementCountOf map (value: int) =
   let maybePreviousOccurences = Map.tryFind value map
-  
-  let newOccurences = 
+
+  let newOccurences =
     match maybePreviousOccurences with
       | Some x -> x + 1
       | None -> 1
