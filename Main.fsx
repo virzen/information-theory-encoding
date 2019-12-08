@@ -4,6 +4,9 @@ open System
 let inputFilename = "116-binary-tree.pdf"
 let binaryFilename = "binary.01"
 
+type Dictionary = Map<byte, string>
+type ReversedDictionary = Map<string, byte>
+
 
 // bytes
 
@@ -19,10 +22,22 @@ let padWithZeros length (x: string) =
 let byteToBinaryOfWordLength wordLength =
   int >> intToBinary >> (padWithZeros wordLength)
 
-let bytesToBinaryOfWordLength wordLength bytes =
+let encode (dictionary: Map<byte, string>) (bytes: byte[]) =
   bytes
-    |> Array.map (byteToBinaryOfWordLength wordLength)
+    |> Array.map (fun byte -> Map.find byte dictionary)
     |> String.concat ""
+
+
+let simpleDictionary =
+  let bytes = seq { 0 .. 255 } |> Seq.map byte
+  let encoded = Seq.map (byteToBinaryOfWordLength 8) bytes
+  let pairs = Seq.zip bytes encoded
+
+  Map.ofSeq pairs
+
+
+let reverse (dictionary: Dictionary): ReversedDictionary =
+      Map.fold (fun dict key value -> dict.Add(value,key)) Map.empty dictionary
 
 
 // binary
@@ -65,7 +80,7 @@ let distribution (values: int[]): Distribution =
 
 inputFilename
   |> readFileAsBytes
-  |> bytesToBinaryOfWordLength 8
+  |> encode simpleDictionary
   |> writeToFile binaryFilename
 
 binaryFilename
