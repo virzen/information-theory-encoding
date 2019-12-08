@@ -1,12 +1,33 @@
 open System.IO
 open System
 
-type Dictionary = Map<byte, string>
-type ReversedDictionary = Map<string, byte>
 
 let joinWith (separator: string) (iterable: seq<char>) = String.Join(separator, iterable)
 
-// bytes
+
+// distribution
+
+type Distribution = Map<int, int>
+
+let incrementCountOf map (value: int) =
+  let maybePreviousOccurences = Map.tryFind value map
+
+  let newOccurences =
+    match maybePreviousOccurences with
+      | Some x -> x + 1
+      | None -> 1
+
+  Map.add value newOccurences map
+
+let distribution (values: int[]): Distribution =
+    Array.fold incrementCountOf Map.empty values
+
+
+type Dictionary = Map<byte, string>
+type ReversedDictionary = Map<string, byte>
+
+
+// encoding
 
 let readBytes filename =
   File.ReadAllBytes(filename)
@@ -38,7 +59,7 @@ let reverse (dictionary: Dictionary): ReversedDictionary =
       Map.fold (fun dict key value -> dict.Add(value,key)) Map.empty dictionary
 
 
-// binary
+// decoding
 
 let readText filename =
   File.ReadAllText filename
@@ -90,24 +111,6 @@ let writeStringTo filename s =
 let writeBytesTo filename bytes =
   File.WriteAllBytes(filename, bytes)
 
-
-
-// distribution
-
-type Distribution = Map<int, int>
-
-let incrementCountOf map (value: int) =
-  let maybePreviousOccurences = Map.tryFind value map
-
-  let newOccurences =
-    match maybePreviousOccurences with
-      | Some x -> x + 1
-      | None -> 1
-
-  Map.add value newOccurences map
-
-let distribution (values: int[]): Distribution =
-    Array.fold incrementCountOf Map.empty values
 
 
 // MAIN
