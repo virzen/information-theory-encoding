@@ -8,7 +8,7 @@ let joinWith (separator: string) (iterable: seq<char>) = String.Join(separator, 
 
 // bytes
 
-let readBytes filename =
+let readFileAsBytes filename =
   File.ReadAllBytes(filename)
 
 let intToBinary (x: int) =
@@ -40,7 +40,7 @@ let reverse (dictionary: Dictionary): ReversedDictionary =
 
 // binary
 
-let readText filename =
+let readFileAsBinary filename =
   File.ReadAllText filename
 
 let binaryToByte (b: System.String) =
@@ -112,10 +112,12 @@ let distribution (values: int[]): Distribution =
 
 // MAIN
 
-readBytes "Main.fsx"
+"Main.fsx"
+  |> readFileAsBytes
   |> encode simpleDictionary
   |> writeStringTo "Main.fsx.01"
 
-readText "Main.fsx.01"
+"Main.fsx.01"
+  |> readFileAsBinary
   |> decode (reverse simpleDictionary)
   |> writeBytesTo "Main.rebuild.fsx"
