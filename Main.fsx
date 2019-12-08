@@ -30,10 +30,10 @@ let bytesToBinaryOfWordLength wordLength bytes =
 let readFileAsBinary filename =
   File.ReadAllText filename
 
-let binaryToInt b =
-  Convert.ToInt32(b, 2)
+let binaryToInt (b: System.String) =
+  Convert.ToInt32(string b, 2)
 
-let binaryOfWordLengthToInts wordLength (s: string) = // custom format instead of string?
+let binaryOfWordLengthToInts wordLength (s: string): int[] = // custom format instead of string?
   s.ToCharArray()
     |> Array.chunkBySize wordLength
     |> Array.map System.String
