@@ -87,7 +87,6 @@ let decode (dictionary: ReversedDictionary) (s: string): byte[] =
   let mutable chars: char[] = s.ToCharArray()
   let mutable complete = false
   let mutable result: byte[] = [||]
-  let mutable i = 0
 
   while not complete do
     let byte, newChars = findFirstSymbolFromDictionary dictionary chars
@@ -98,9 +97,6 @@ let decode (dictionary: ReversedDictionary) (s: string): byte[] =
       chars <- newChars
     else do
       complete <- true
-
-    printf "%A\n" i
-    i <- i + 1
 
   result
 
