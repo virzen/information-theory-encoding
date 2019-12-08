@@ -19,7 +19,7 @@ let incrementCountOf map (value: int) =
 
   Map.add value newOccurences map
 
-let distribution (values: int[]): Distribution =
+let distribution (values: byte[]): Distribution =
     Array.fold incrementCountOf Map.empty values
 
 
@@ -106,6 +106,33 @@ let writeStringTo filename s =
 
 let writeBytesTo filename bytes =
   File.WriteAllBytes(filename, bytes)
+
+
+type Bit = | One of int | Zero of int
+
+type Node = | TwoDescendants of Node * Node | OneDescendant of Node | Leaf of byte
+
+type EncodingTree = Node
+
+let dictOfEncodingTree (tree: EncodingTree): Dictionary =
+  failwith "Not implemented"
+
+let buildEncodingTree (bytes: byte[]): EncodingTree =
+  let splitBalanced pairs =
+
+  let sortedPairs = distribution bytes |> Map.toSeq |> Seq.sortBy (fun (_byte, count) -> count)
+
+let shannonFano (bytes: byte[]): Dictionary =
+  failwith "Not implemented"
+
+
+
+let huffman (bytes: byte[]): Dictionary =
+  failwith "Not implemented"
+
+
+
+
 
 
 
