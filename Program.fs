@@ -1,4 +1,4 @@
-open System.IO
+﻿open System.IO
 open System
 
 
@@ -19,8 +19,8 @@ let incrementCountOf map (value: int) =
 
   Map.add value newOccurences map
 
-let distribution (values: byte[]): Distribution =
-    Array.fold incrementCountOf Map.empty values
+//let distribution (values: byte[]): Distribution =
+    //Array.fold incrementCountOf Map.empty values
 
 
 type Dictionary = Map<byte, string>
@@ -108,7 +108,6 @@ let writeBytesTo filename bytes =
   File.WriteAllBytes(filename, bytes)
 
 
-type Bit = | One of int | Zero of int
 
 type Node = | TwoDescendants of Node * Node | OneDescendant of Node | Leaf of byte
 
@@ -117,10 +116,11 @@ type EncodingTree = Node
 let dictOfEncodingTree (tree: EncodingTree): Dictionary =
   failwith "Not implemented"
 
-let buildEncodingTree (bytes: byte[]): EncodingTree =
-  let splitBalanced pairs =
+//let buildEncodingTree (bytes: byte[]): EncodingTree =
+  //let splitBalanced pairs =
 
-  let sortedPairs = distribution bytes |> Map.toSeq |> Seq.sortBy (fun (_byte, count) -> count)
+  //let sortedPairs = distribution bytes |> Map.toSeq |> Seq.sortBy (fun (_byte, count) -> count)
+
 
 let shannonFano (bytes: byte[]): Dictionary =
   failwith "Not implemented"
@@ -131,17 +131,14 @@ let huffman (bytes: byte[]): Dictionary =
   failwith "Not implemented"
 
 
+[<EntryPoint>]
+let main argv =
+    readBytes "../../../Main.fsx"
+      |> encode simpleDictionary
+      |> writeStringTo "../../../Main.fsx.01"
 
-
-
-
-
-// MAIN
-
-readBytes "Main.fsx"
-  |> encode simpleDictionary
-  |> writeStringTo "Main.fsx.01"
-
-readText "Main.fsx.01"
-  |> decode (reverse simpleDictionary)
-  |> writeBytesTo "Main.rebuild.fsx"
+    readText "../../../Main.fsx.01"
+      |> decode (reverse simpleDictionary)
+      |> writeBytesTo "../../../Main.rebuild.fsx"
+      
+    0 // return an integer exit code
