@@ -2,30 +2,55 @@
 open System
 
 
-let joinWith (separator : string) (iterable : seq<char>) = String.Join(separator, iterable)
 
+type Node =
+    | Parent of Node * Node
+    | Leaf of byte
 
-// distribution
-
-type Distribution = Map<int, int>
-
-let incrementCountOf map (value : int) =
-    let maybePreviousOccurences = Map.tryFind value map
-
-    let newOccurences =
-        match maybePreviousOccurences with
-        | Some x -> x + 1
-        | None -> 1
-
-    Map.add value newOccurences map
-
-//let distribution (values: byte[]): Distribution =
-//Array.fold incrementCountOf Map.empty values
-
+type EncodingTree = Node
 
 type Dictionary = Map<byte, string>
 
 type ReversedDictionary = Map<string, byte>
+
+
+module Dictionary = 
+    let empty =
+        Map.empty<byte, string>
+
+
+    let ofEncodingTree (tree : EncodingTree) : Dictionary = 
+        //let step visited stack dict node: Dictionary =
+            //match node with 
+            //| Parent left, right ->
+
+        failwith "Not implemented"
+
+
+    let reverse (dictionary : Dictionary) : ReversedDictionary =
+        Map.fold (fun dict key value -> dict.Add(value, key)) Map.empty dictionary
+
+
+
+let joinWith (separator : string) (iterable : seq<char>) = String.Join(separator, iterable)
+
+
+
+type Distribution = Map<byte, int>
+
+module Distribution =
+  let incrementCountOf map (value : byte) =
+      let maybePreviousOccurences = Map.tryFind value map
+
+      let newOccurences =
+          match maybePreviousOccurences with
+          | Some x -> x + 1
+          | None -> 1
+
+      Map.add value newOccurences map
+
+  let from (values : byte []) : Distribution = Array.fold incrementCountOf Map.empty values
+
 
 
 // encoding
@@ -54,8 +79,6 @@ let simpleDictionary =
     Map.ofSeq pairs
 
 
-let reverse (dictionary : Dictionary) : ReversedDictionary =
-    Map.fold (fun dict key value -> dict.Add(value, key)) Map.empty dictionary
 
 
 // decoding
@@ -101,37 +124,56 @@ let writeBytesTo filename bytes = File.WriteAllBytes(filename, bytes)
 
 
 
-type Node =
-    | TwoDescendants of Node * Node
-    | OneDescendant of Node
-    | Leaf of byte
 
-type EncodingTree = Node
+let shannonFano (bytes : byte []) : EncodingTree =
+    let sortedPairs =
+        Distribution.from bytes
+        |> Map.toArray
+        |> Array.sortBy (fun (_byte, count) -> count)
 
-let dictOfEncodingTree (tree : EncodingTree) : Dictionary = failwith "Not implemented"
+    let sortedSigns = sortedPairs |> Array.map (fun (byte, _count) -> byte)
+    
+    let balancedSplit (signs : byte []) : byte [] * byte [] = 
+        let mutable minDiff = System.Int32.MaxValue;
+        let mutable index = -1;
 
-//let buildEncodingTree (bytes: byte[]): EncodingTree =
-//let splitBalanced pairs =
+        let ints = Array.map int signs
+        
+        for i = 0 to ((Array.length signs) - 2) do
+  
+            let leftSum = Array.sum ints.[0..i]
+            let rightSum = Array.sum ints.[(i+1)..]
+            let diff = abs (leftSum - rightSum)
 
-//let sortedPairs = distribution bytes |> Map.toSeq |> Seq.sortBy (fun (_byte, count) -> count)
+            if diff < minDiff
+            then do
+                minDiff <- diff
+                index <- i
+                
+        signs.[0..index], signs.[(index + 1)..]
 
 
-let shannonFano (bytes : byte []) : Dictionary = failwith "Not implemented"
+    let rec nodify (signs : byte []) : Node =
+        match signs with
+        | [| x |] -> Leaf x
+        | xs ->
+            let left, right = balancedSplit signs
+            Parent((nodify left), (nodify right))
 
-
+    nodify sortedSigns
 
 let huffman (bytes : byte []) : Dictionary = failwith "Not implemented"
 
-
-
 [<EntryPoint>]
 let main argv =
-    readBytes "../../../Main.fsx"
-    |> encode simpleDictionary
-    |> writeStringTo "../../../Main.fsx.01"
+    let bytes = readBytes "../../../116-binary-tree.pdf"
+    let encodingTree = shannonFano bytes
+    let dictionary = Dictionary.ofEncodingTree encodingTree
 
-    readText "../../../Main.fsx.01"
-    |> decode (reverse simpleDictionary)
-    |> writeBytesTo "../../../Main.rebuild.fsx"
+    encode dictionary bytes |> writeStringTo "../../../Main.fsx.01"
+
+    //readText "../../../Main.fsx.01"
+    //|> decode (reverse simpleDictionary)
+    //|> writeBytesTo "../../../Main.rebuild.fsx"
 
     0 // return an integer exit code
