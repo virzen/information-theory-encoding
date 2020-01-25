@@ -1,11 +1,12 @@
 ﻿open System.IO
 open System
+open FSharpx.Collections
 
-
+type Codeword = string
 
 type Node =
     | Parent of Node * Node
-    | Leaf of byte
+    | Leaf of byte * Codeword
 
 type EncodingTree = Node
 
@@ -14,15 +15,45 @@ type Dictionary = Map<byte, string>
 type ReversedDictionary = Map<string, byte>
 
 
+
+let joinSymbolsWith (separator : string) (iterable : seq<char>) = String.Join(separator, iterable)
+
+let joinIntsWith (separator: string) (iterable : seq<int>) = 
+    let strings = Seq.map string iterable
+
+    String.Join(separator, strings)
+
+
+module Stack =
+    type T<'a> = 'a list
+
+    let empty: T<'a> = List.empty<'a>
+
+    let push (stack: T<'a>) (x: 'a): T<'a> =
+        x :: stack
+
+    let pop (stack: T<'a>): 'a * T<'a> =
+        match stack with
+        | [] -> failwith "pop used on empty stack"
+        | h::t -> h, t
+
+    let values (stack: T<'a>): 'a list =
+        List.rev stack 
+
+
 module Dictionary = 
     let empty =
         Map.empty<byte, string>
 
+    let add = Map.add
 
     let ofEncodingTree (tree : EncodingTree) : Dictionary = 
-        //let step visited stack dict node: Dictionary =
-            //match node with 
-            //| Parent left, right ->
+        let mutable dict = Dictionary.empty
+
+        let rec step visited node =
+            match node with 
+            | Leaf value, codeword -> do
+                dict <- Map.add codeword value
 
         failwith "Not implemented"
 
@@ -31,8 +62,6 @@ module Dictionary =
         Map.fold (fun dict key value -> dict.Add(value, key)) Map.empty dictionary
 
 
-
-let joinWith (separator : string) (iterable : seq<char>) = String.Join(separator, iterable)
 
 
 
@@ -93,7 +122,7 @@ let findFirstSymbolFromDictionary (dictionary : ReversedDictionary) (symbols : c
     let mutable numOfDigits = 1
 
     while not found do
-        let key = Array.take numOfDigits symbols |> joinWith ""
+        let key = Array.take numOfDigits symbols |> joinSymbolsWith ""
         match Map.tryFind key dictionary with
         | Some value ->
             do result <- value
@@ -123,16 +152,7 @@ let writeStringTo filename s = File.WriteAllText(filename, s)
 let writeBytesTo filename bytes = File.WriteAllBytes(filename, bytes)
 
 
-
-
 let shannonFano (bytes : byte []) : EncodingTree =
-    let sortedPairs =
-        Distribution.from bytes
-        |> Map.toArray
-        |> Array.sortBy (fun (_byte, count) -> count)
-
-    let sortedSigns = sortedPairs |> Array.map (fun (byte, _count) -> byte)
-    
     let balancedSplit (signs : byte []) : byte [] * byte [] = 
         let mutable minDiff = System.Int32.MaxValue;
         let mutable index = -1;
@@ -152,15 +172,22 @@ let shannonFano (bytes : byte []) : EncodingTree =
                 
         signs.[0..index], signs.[(index + 1)..]
 
-
-    let rec nodify (signs : byte []) : Node =
+    let rec nodify (bits) (signs : byte []) : Node =
         match signs with
-        | [| x |] -> Leaf x
+        | [| x |] -> 
+            let codeword: Codeword = joinIntsWith "" bits
+            Leaf (x, codeword)
         | xs ->
             let left, right = balancedSplit signs
-            Parent((nodify left), (nodify right))
+            let leftBits = PersistentVector.conj 0 bits
+            let rightBits = PersistentVector.conj 1 bits
+            Parent ((nodify leftBits left), (nodify rightBits right))
 
-    nodify sortedSigns
+    Distribution.from bytes
+    |> Map.toArray
+    |> Array.sortBy (fun (_byte, count) -> count)
+    |> Array.map (fun (byte, _count) -> byte)
+    |> nodify PersistentVector.empty
 
 let huffman (bytes : byte []) : Dictionary = failwith "Not implemented"
 
