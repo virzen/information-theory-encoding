@@ -2,15 +2,19 @@
 open System
 open FSharpx.Collections
 
+type Sign = byte
+
+type Codeword = string
+
 type Node =
     | Parent of Node * Node
-    | Leaf of byte
+    | Leaf of Sign
 
 type EncodingTree = Node
 
-type Dictionary = Map<byte, string>
+type Dictionary = Map<Sign, Codeword>
 
-type ReversedDictionary = Map<string, byte>
+type ReversedDictionary = Map<Codeword, Sign>
 
 
 
@@ -26,7 +30,7 @@ let joinStringsWith (separator : string) (iterable : seq<string>) = String.Join(
 
 module Dictionary = 
     let empty =
-        Map.empty<byte, string>
+        Map.empty<Sign, Codeword>
         
     let reverse (dictionary : Dictionary) : ReversedDictionary =
         Map.fold (fun dict key value -> dict.Add(value, key)) Map.empty dictionary
@@ -35,10 +39,10 @@ module Dictionary =
         Map.toList d
 
 
-type Distribution = Map<byte, int>
+type Distribution = Map<Sign, int>
 
 module Distribution =
-  let incrementCountOf map (value : byte) =
+  let incrementCountOf map (value : Sign) =
       let maybePreviousOccurences = Map.tryFind value map
 
       let newOccurences =
@@ -48,7 +52,7 @@ module Distribution =
 
       Map.add value newOccurences map
 
-  let from (values : byte []) : Distribution = Array.fold incrementCountOf Map.empty values
+  let from (values : Sign []) : Distribution = Array.fold incrementCountOf Map.empty values
 
 
 
@@ -65,15 +69,15 @@ let byteToBinaryOfWordLength wordLength =
     >> intToBinary
     >> (padWithZeros wordLength)
 
-let encode (dictionary : Dictionary) (bytes : byte []) =
-    bytes
-    |> Array.map (fun byte -> Map.find byte dictionary)
+let encode (dictionary : Dictionary) (signs : Sign []) =
+    signs
+    |> Array.map (fun sign -> Map.find sign dictionary)
     |> String.concat ""
 
-let simpleDictionary =
-    let bytes = seq { 0..255 } |> Seq.map byte
-    let encoded = Seq.map (byteToBinaryOfWordLength 8) bytes
-    let pairs = Seq.zip bytes encoded
+let simpleDictionary : Dictionary =
+    let signs : seq<Sign> = seq { 0..255 } |> Seq.map byte
+    let encoded = Seq.map (byteToBinaryOfWordLength 8) signs
+    let pairs = Seq.zip signs encoded
 
     Map.ofSeq pairs
 
@@ -86,12 +90,12 @@ let readText filename = File.ReadAllText filename
 
 let binaryToByte (b : System.String) = Convert.ToInt32(string b, 2)
 
-let findFirstSymbolFromDictionary (dictionary : ReversedDictionary) (symbols : char list) : byte * (char list) =
+let findFirstSymbolFromDictionary (dictionary : ReversedDictionary) (characters : char list) : Sign * (char list) =
     let mutable found = false
     let mutable result = 0 |> byte
     let mutable numOfDigits = 1
 
-    let rec loop triedChars symbols =
+    let rec loop triedChars symbols : Sign * char list =
         match symbols with 
         | char::rest ->
             let charsOfKey = PersistentVector.conj char triedChars
@@ -104,25 +108,25 @@ let findFirstSymbolFromDictionary (dictionary : ReversedDictionary) (symbols : c
                 loop charsOfKey rest 
         | [] -> failwith "Cannot find symbol in dictionary"
 
-    loop PersistentVector.empty symbols
+    loop PersistentVector.empty characters
 
 
-let decode (dictionary : ReversedDictionary) (s : string) : byte [] =
-    let charactersToProcess = String.length s
+let decode (dictionary : ReversedDictionary) (text : string) : Sign [] =
+    let charactersToProcess = String.length text
 
     printfn "Decoding string of length %d" charactersToProcess
 
-    let findFirst = findFirstSymbolFromDictionary dictionary
+    let firstMatchingSign = findFirstSymbolFromDictionary dictionary
 
     let rec loop chars result =
-        let byte, newChars = findFirst chars
-        let newResult = PersistentVector.conj byte result
+        let sign, newChars = firstMatchingSign chars
+        let newResult = PersistentVector.conj sign result
 
         match newChars with 
         | [] -> newResult
         | xs -> loop newChars newResult
 
-    let chars = s.ToCharArray() |> List.ofArray
+    let chars = text.ToCharArray() |> List.ofArray
     let result = PersistentVector.empty<byte>
 
     loop chars result |> Array.ofSeq
@@ -168,13 +172,11 @@ let shannonFano (bytes : byte []) : EncodingTree =
 
     printfn "Bytes sorted by occurences:\n%A" bytesWithCountsSorted
 
-    let bytesSorted = Array.map (fun (byte, _count) -> byte) bytesWithCountsSorted
-
-    nodify bytesSorted
+    nodify bytesWithCountsSorted
 
 
 
-let huffman (bytes : byte []) : Dictionary = failwith "Not implemented"
+let huffman (signs : Sign []) : EncodingTree = failwith "Not implemented"
 
 
 let encodingTreeToDictionary (tree : EncodingTree) : Dictionary =
