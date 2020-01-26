@@ -120,27 +120,12 @@ let decode (dictionary : ReversedDictionary) (s : string) : byte [] =
 
         match newChars with 
         | [] -> newResult
-        | xs -> 
-            printfn "Decoding progress: %d" (PersistentVector.length result)
-            loop newChars newResult
+        | xs -> loop newChars newResult
 
     let chars = s.ToCharArray() |> List.ofArray
     let result = PersistentVector.empty<byte>
 
     loop chars result |> Array.ofSeq
-
-    
-    //while not complete do
-    //    let byte, newChars = findFirstSymbolFromDictionary dictionary chars
-
-    //    result <- PersistentVector.conj byte result
-
-    //    if List.length newChars > 0 then do chars <- newChars
-    //    else do complete <- true
-
-    //    printfn "Decoding progress: %d/%d" (PersistentVector.length result) (charactersToProcess)
-
-    //result |> Array.ofSeq
 
 
 let writeStringTo filename s = File.WriteAllText(filename, s)
