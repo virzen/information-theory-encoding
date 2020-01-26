@@ -138,16 +138,21 @@ let writeBytesTo filename bytes = File.WriteAllBytes(filename, bytes)
 
 
 let shannonFano (bytes : byte []) : EncodingTree =
-    let balancedSplit (signs : byte []) : byte [] * byte [] = 
+    let mapFirst (f : 'a -> 'c) ((a, b) : 'a * 'b) : 'c * 'b =
+        (f a, b)
+
+    let second ((a, b) : 'a * 'b) : 'b =
+        b
+
+    let balancedSplit (signsWithCounts : (Sign * int) []) : (Sign * int) [] * (Sign * int) [] = 
         let mutable minDiff = System.Int32.MaxValue;
         let mutable index = -1;
 
-        let ints = Array.map int signs
-        
-        for i = 0 to ((Array.length signs) - 2) do
-  
-            let leftSum = Array.sum ints.[0..i]
-            let rightSum = Array.sum ints.[(i+1)..]
+        let ints = Array.map (mapFirst int) signsWithCounts
+
+        for i = 0 to ((Array.length signsWithCounts) - 2) do
+            let leftSum = Array.sumBy second ints.[0..i]
+            let rightSum = Array.sumBy second ints.[(i+1)..]
             let diff = abs (leftSum - rightSum)
 
             if diff < minDiff
@@ -155,14 +160,15 @@ let shannonFano (bytes : byte []) : EncodingTree =
                 minDiff <- diff
                 index <- i
 
-        signs.[0..index], signs.[(index + 1)..]
+        signsWithCounts.[0..index], signsWithCounts.[(index + 1)..]
 
-    let rec nodify (signs : byte []): EncodingTree =
-        match signs with
+    let rec nodify (signsWithCounts : (byte * int) []): EncodingTree =
+        match signsWithCounts with
         | [| x |] -> 
-            Leaf x
+            let sign, _count = x
+            Leaf sign
         | xs ->
-            let left, right = balancedSplit signs
+            let left, right = balancedSplit signsWithCounts
             Parent((nodify left), (nodify right))
 
     let bytesWithCountsSorted = Distribution.from bytes
