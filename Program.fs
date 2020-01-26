@@ -2,11 +2,9 @@
 open System
 open FSharpx.Collections
 
-type Codeword = string
-
 type Node =
     | Parent of Node * Node
-    | Leaf of byte * Codeword
+    | Leaf of byte
 
 type EncodingTree = Node
 
@@ -23,46 +21,18 @@ let joinIntsWith (separator: string) (iterable : seq<int>) =
 
     String.Join(separator, strings)
 
-
-module Stack =
-    type T<'a> = 'a list
-
-    let empty: T<'a> = List.empty<'a>
-
-    let push (stack: T<'a>) (x: 'a): T<'a> =
-        x :: stack
-
-    let pop (stack: T<'a>): 'a * T<'a> =
-        match stack with
-        | [] -> failwith "pop used on empty stack"
-        | h::t -> h, t
-
-    let values (stack: T<'a>): 'a list =
-        List.rev stack 
+let joinStringsWith (separator : string) (iterable : seq<string>) = String.Join(separator, iterable)
 
 
 module Dictionary = 
     let empty =
         Map.empty<byte, string>
-
-    let add = Map.add
-
-    let ofEncodingTree (tree : EncodingTree) : Dictionary = 
-        let mutable dict = Dictionary.empty
-
-        let rec step visited node =
-            match node with 
-            | Leaf value, codeword -> do
-                dict <- Map.add codeword value
-
-        failwith "Not implemented"
-
-
+        
     let reverse (dictionary : Dictionary) : ReversedDictionary =
         Map.fold (fun dict key value -> dict.Add(value, key)) Map.empty dictionary
 
-
-
+    let entries (d : Dictionary) =
+        Map.toList d
 
 
 type Distribution = Map<byte, int>
@@ -169,38 +139,78 @@ let shannonFano (bytes : byte []) : EncodingTree =
             then do
                 minDiff <- diff
                 index <- i
-                
+
         signs.[0..index], signs.[(index + 1)..]
 
-    let rec nodify (bits) (signs : byte []) : Node =
+    let rec nodify (signs : byte []): EncodingTree =
         match signs with
         | [| x |] -> 
-            let codeword: Codeword = joinIntsWith "" bits
-            Leaf (x, codeword)
+            Leaf x
         | xs ->
             let left, right = balancedSplit signs
-            let leftBits = PersistentVector.conj 0 bits
-            let rightBits = PersistentVector.conj 1 bits
-            Parent ((nodify leftBits left), (nodify rightBits right))
+            Parent((nodify left), (nodify right))
 
-    Distribution.from bytes
-    |> Map.toArray
-    |> Array.sortBy (fun (_byte, count) -> count)
-    |> Array.map (fun (byte, _count) -> byte)
-    |> nodify PersistentVector.empty
+    let bytesWithCountsSorted = Distribution.from bytes
+                                |> Map.toArray
+                                |> Array.sortBy (fun (_byte, count) -> count)
+                                |> Array.rev
+
+    printfn "Bytes sorted by occurences:\n%A" bytesWithCountsSorted
+
+    let bytesSorted = Array.map (fun (byte, _count) -> byte) bytesWithCountsSorted
+
+    nodify bytesSorted
+
+
 
 let huffman (bytes : byte []) : Dictionary = failwith "Not implemented"
+
+
+let encodingTreeToDictionary (tree : EncodingTree) : Dictionary =
+    let mapSecond f (a, b) =
+        (a, f b)
+
+    let bitsToString (bits : PersistentVector<int>) : string =
+        joinIntsWith "" bits
+
+    let rec loop bits node =
+      match node with 
+      | Leaf x -> 
+          [(x, bits)]
+      | Parent (left, right) ->
+          let leftBits = PersistentVector.conj 0 bits
+          let rightBits = PersistentVector.conj 1 bits
+          (loop leftBits left) @ (loop rightBits right)
+
+    loop PersistentVector.empty tree |> List.map (mapSecond bitsToString) |> Map.ofSeq
+
+let dictCodewordLength ((_, codeword) : byte * string) : int =
+    String.length codeword
 
 [<EntryPoint>]
 let main argv =
     let bytes = readBytes "../../../116-binary-tree.pdf"
+
+    printfn "Creting encoding tree using Shannon-Fano method"
+
     let encodingTree = shannonFano bytes
-    let dictionary = Dictionary.ofEncodingTree encodingTree
 
-    encode dictionary bytes |> writeStringTo "../../../Main.fsx.01"
+    printfn "Creating dictionary from encoding tree"
 
-    //readText "../../../Main.fsx.01"
-    //|> decode (reverse simpleDictionary)
-    //|> writeBytesTo "../../../Main.rebuild.fsx"
+    let dictionary = encodingTreeToDictionary encodingTree
+
+    printfn "Dictionary created:\n%A" dictionary
+
+    printfn "Dictionary entries by codeword length:\n%A" (Dictionary.entries dictionary |> List.sortBy dictCodewordLength)
+
+    printfn "Encoding file with created dictionary"
+
+    encode dictionary bytes |> writeStringTo "../../../116-binary-tree.01"
+
+    printfn "Encoded, decoding"
+
+    readText "../../../116-binary-tree.01"
+    |> decode (Dictionary.reverse dictionary)
+    |> writeBytesTo "../../../116-binary-tree.rebuilt.pdf"
 
     0 // return an integer exit code
