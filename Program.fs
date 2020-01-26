@@ -198,13 +198,22 @@ let encodingTreeToDictionary (tree : EncodingTree) : Dictionary =
 let dictCodewordLength ((_, codeword) : byte * string) : int =
     String.length codeword
 
+let duration f =
+    let timer = new System.Diagnostics.Stopwatch()
+    timer.Start()
+    let returnValue = f()
+    timer.Stop()
+    let time = timer.ElapsedMilliseconds
+
+    returnValue, time
+
 [<EntryPoint>]
 let main argv =
-    let bytes = readBytes "../../../116-binary-tree.pdf"
+    let input = readBytes "../../../116-binary-tree.pdf"
 
     printfn "Creting encoding tree using Shannon-Fano method"
 
-    let encodingTree = shannonFano bytes
+    let encodingTree = shannonFano input
 
     printfn "Creating dictionary from encoding tree"
 
@@ -216,12 +225,18 @@ let main argv =
 
     printfn "Encoding file with created dictionary"
 
-    encode dictionary bytes |> writeStringTo "../../../116-binary-tree.01"
+    let encodedInput = encode dictionary input
 
-    printfn "Encoded, decoding"
+    printfn "Encoded, saving to file"
 
-    readText "../../../116-binary-tree.01"
-    |> decode (Dictionary.reverse dictionary)
-    |> writeBytesTo "../../../116-binary-tree.rebuilt.pdf"
+    writeStringTo "../../../116-binary-tree.01" encodedInput
+
+    printfn "Saved to file, decoding"
+
+    let decodedInput, time = duration (fun _ -> decode (Dictionary.reverse dictionary) encodedInput)
+
+    printfn "Decoded in %d ms" time
+
+    writeBytesTo "../../../116-binary-tree.rebuilt.pdf" decodedInput
 
     0 // return an integer exit code
