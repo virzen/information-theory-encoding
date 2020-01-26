@@ -14,7 +14,7 @@ type EncodingTree = Node
 
 type Dictionary = Map<Sign, Codeword>
 
-type ReversedDictionary = Map<Codeword, Sign>
+type ReverseDictionary = Map<Codeword, Sign>
 
 
 
@@ -32,7 +32,7 @@ module Dictionary =
     let empty =
         Map.empty<Sign, Codeword>
         
-    let reverse (dictionary : Dictionary) : ReversedDictionary =
+    let reverse (dictionary : Dictionary) : ReverseDictionary =
         Map.fold (fun dict key value -> dict.Add(value, key)) Map.empty dictionary
 
     let entries (d : Dictionary) =
@@ -90,7 +90,7 @@ let readText filename = File.ReadAllText filename
 
 let binaryToByte (b : System.String) = Convert.ToInt32(string b, 2)
 
-let findFirstSymbolFromDictionary (dictionary : ReversedDictionary) (characters : char list) : Sign * (char list) =
+let findFirstSymbolFromDictionary (dictionary : ReverseDictionary) (characters : char list) : Sign * (char list) =
     let mutable found = false
     let mutable result = 0 |> byte
     let mutable numOfDigits = 1
@@ -111,7 +111,7 @@ let findFirstSymbolFromDictionary (dictionary : ReversedDictionary) (characters 
     loop PersistentVector.empty characters
 
 
-let decode (dictionary : ReversedDictionary) (text : string) : Sign [] =
+let decode (dictionary : ReverseDictionary) (text : string) : Sign [] =
     let charactersToProcess = String.length text
 
     printfn "Decoding string of length %d" charactersToProcess
