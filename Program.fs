@@ -86,35 +86,61 @@ let readText filename = File.ReadAllText filename
 
 let binaryToByte (b : System.String) = Convert.ToInt32(string b, 2)
 
-let findFirstSymbolFromDictionary (dictionary : ReversedDictionary) (symbols : char []) : byte * char [] =
+let findFirstSymbolFromDictionary (dictionary : ReversedDictionary) (symbols : char list) : byte * (char list) =
     let mutable found = false
     let mutable result = 0 |> byte
     let mutable numOfDigits = 1
 
-    while not found do
-        let key = Array.take numOfDigits symbols |> joinSymbolsWith ""
-        match Map.tryFind key dictionary with
-        | Some value ->
-            do result <- value
-               found <- true
-        | None -> do numOfDigits <- numOfDigits + 1
+    let rec loop triedChars symbols =
+        match symbols with 
+        | char::rest ->
+            let charsOfKey = PersistentVector.conj char triedChars
+            let key = joinSymbolsWith "" charsOfKey
 
-    result, symbols.[numOfDigits..]
+            match Map.tryFind key dictionary with
+            | Some value ->
+                value, rest
+            | None -> 
+                loop charsOfKey rest 
+        | [] -> failwith "Cannot find symbol in dictionary"
+
+    loop PersistentVector.empty symbols
+
 
 let decode (dictionary : ReversedDictionary) (s : string) : byte [] =
-    let mutable chars : char [] = s.ToCharArray()
-    let mutable complete = false
-    let mutable result : byte [] = [||]
+    let charactersToProcess = String.length s
 
-    while not complete do
-        let byte, newChars = findFirstSymbolFromDictionary dictionary chars
+    printfn "Decoding string of length %d" charactersToProcess
 
-        result <- Array.append result [| byte |]
+    let findFirst = findFirstSymbolFromDictionary dictionary
 
-        if Array.length newChars > 0 then do chars <- newChars
-        else do complete <- true
+    let rec loop chars result =
+        let byte, newChars = findFirst chars
+        let newResult = PersistentVector.conj byte result
 
-    result
+        match newChars with 
+        | [] -> newResult
+        | xs -> 
+            printfn "Decoding progress: %d" (PersistentVector.length result)
+            loop newChars newResult
+
+    let chars = s.ToCharArray() |> List.ofArray
+    let result = PersistentVector.empty<byte>
+
+    loop chars result |> Array.ofSeq
+
+    
+    //while not complete do
+    //    let byte, newChars = findFirstSymbolFromDictionary dictionary chars
+
+    //    result <- PersistentVector.conj byte result
+
+    //    if List.length newChars > 0 then do chars <- newChars
+    //    else do complete <- true
+
+    //    printfn "Decoding progress: %d/%d" (PersistentVector.length result) (charactersToProcess)
+
+    //result |> Array.ofSeq
 
 
 let writeStringTo filename s = File.WriteAllText(filename, s)
