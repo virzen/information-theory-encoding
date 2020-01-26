@@ -207,15 +207,38 @@ let duration f =
 
     returnValue, time
 
-[<EntryPoint>]
-let main argv =
-    let input = readBytes "../../../116-binary-tree.pdf"
 
-    printfn "Creting encoding tree using Shannon-Fano method"
+//let programArgs argv =
+    //let elementsAbove (xs : 'a array) (i : int) : 'a array =
+    //    xs.[(i + 1)..]
+    //let separatorIndex = Array.tryFindIndex ((=) "==") argv
+    //Option.map (elementsAbove argv) separatorIndex
+
+
+let exampleFile = "116-binary-tree.pdf"
+
+
+let fileName (path : string) =
+    Path.GetFileName(path)
+
+let fileNameTo01 (path : string) =
+    path + ".01"
+
+let fileNameToRebuilt (path : string) =
+    let oldExt = Path.GetExtension(path)
+    Path.ChangeExtension(path, ".rebuilt" + oldExt)
+
+let encodeDecode filePath =
+    printfn "Processing file %s" (fileName filePath)
+    printfn "==="
+
+    let input = readBytes filePath
+
+    printfn "Creating encoding tree using Shannon-Fano method"
 
     let encodingTree = shannonFano input
 
-    printfn "Creating dictionary from encoding tree"
+    printfn "Creating dictionary"
 
     let dictionary = encodingTreeToDictionary encodingTree
 
@@ -223,20 +246,27 @@ let main argv =
 
     printfn "Dictionary entries by codeword length:\n%A" (Dictionary.entries dictionary |> List.sortBy dictCodewordLength)
 
-    printfn "Encoding file with created dictionary"
+    printfn "Encoding file"
 
     let encodedInput = encode dictionary input
 
-    printfn "Encoded, saving to file"
+    printfn "Saving to file"
 
-    writeStringTo "../../../116-binary-tree.01" encodedInput
+    writeStringTo (fileNameTo01 filePath) encodedInput
 
-    printfn "Saved to file, decoding"
+    printfn "Decoding"
 
     let decodedInput, time = duration (fun _ -> decode (Dictionary.reverse dictionary) encodedInput)
 
     printfn "Decoded in %d ms" time
 
-    writeBytesTo "../../../116-binary-tree.rebuilt.pdf" decodedInput
+    writeBytesTo (fileNameToRebuilt filePath) decodedInput
+
+
+[<EntryPoint>]
+let main argv =
+    let fileName = argv.[0]
+
+    encodeDecode fileName
 
     0 // return an integer exit code
