@@ -65,7 +65,7 @@ let byteToBinaryOfWordLength wordLength =
     >> intToBinary
     >> (padWithZeros wordLength)
 
-let encode (dictionary : Map<byte, string>) (bytes : byte []) =
+let encode (dictionary : Dictionary) (bytes : byte []) =
     bytes
     |> Array.map (fun byte -> Map.find byte dictionary)
     |> String.concat ""
