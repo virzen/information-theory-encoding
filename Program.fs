@@ -246,6 +246,8 @@ let encodeDecode filePath =
 
     let encodingTree = shannonFano input
 
+    printfn "Encoding tree created: %A" encodingTree
+
     printfn "Creating dictionary"
 
     let dictionary = encodingTreeToDictionary encodingTree
