@@ -289,11 +289,11 @@ let encodeDecode filePath =
 
     writeBytesTo (fileNameToRebuilt filePath) decodedInput
 
+    printf "\n"
+
 
 [<EntryPoint>]
 let main argv =
-    let fileName = argv.[0]
-
-    encodeDecode fileName
+    Array.iter encodeDecode argv
 
     0 // return an integer exit code
