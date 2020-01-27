@@ -28,6 +28,10 @@ let joinIntsWith (separator: string) (iterable : seq<int>) =
 let joinStringsWith (separator : string) (iterable : seq<string>) = String.Join(separator, iterable)
 
 
+let (./.) x y =
+    ((x |> float) / (y |> float))
+
+
 module Dictionary = 
     let empty =
         Map.empty<Sign, Codeword>
@@ -216,6 +220,9 @@ let duration f =
     returnValue, time
 
 
+let compressionRate (inputSigns : Sign []) (encodedString : string) : float = 
+    (Array.length inputSigns) ./. (String.length encodedString)
+
 //let programArgs argv =
     //let elementsAbove (xs : 'a array) (i : int) : 'a array =
     //    xs.[(i + 1)..]
@@ -229,12 +236,19 @@ let exampleFile = "116-binary-tree.pdf"
 let fileName (path : string) =
     Path.GetFileName(path)
 
-let fileNameTo01 (path : string) =
-    path + ".01"
+let mapExtension f (path : string) =
+    let oldExt = Path.GetExtension(path)
+    Path.ChangeExtension(path, f(oldExt))
+
+let fileNameToShannonFano (path : string) =
+    mapExtension (fun old -> old + ".sf.01") path
 
 let fileNameToRebuilt (path : string) =
-    let oldExt = Path.GetExtension(path)
-    Path.ChangeExtension(path, ".rebuilt" + oldExt)
+    mapExtension (fun old -> ".rebuilt" + old) path
+
+let fileNameToSimple (path : string) =
+    mapExtension (fun old -> old + ".simple.01") path
+
 
 let encodeDecode filePath =
     printfn "Processing file %s" (fileName filePath)
@@ -246,23 +260,26 @@ let encodeDecode filePath =
 
     let encodingTree = shannonFano input
 
-    printfn "Encoding tree created: %A" encodingTree
-
-    printfn "Creating dictionary"
+    printfn "Encoding tree created:\n%A" encodingTree
+    printfn "Creating dictionary from encoding tree"
 
     let dictionary = encodingTreeToDictionary encodingTree
 
     printfn "Dictionary created:\n%A" dictionary
-
     printfn "Dictionary entries by codeword length:\n%A" (Dictionary.entries dictionary |> List.sortBy dictCodewordLength)
 
-    printfn "Encoding file"
-
+    printfn "Encoding with Shannon-Fano dictionary"
     let encodedInput = encode dictionary input
 
-    printfn "Saving to file"
+    printfn "Encoding with simple dictionary"
+    let simplyEncodedInput = encode simpleDictionary input
 
-    writeStringTo (fileNameTo01 filePath) encodedInput
+    printfn "Shannon-Fano compression rate: %f" (compressionRate input encodedInput)
+    printfn "Simple encoding compression rate: %f" (compressionRate input simplyEncodedInput)
+
+    printfn "Saving to file"
+    writeStringTo (fileNameToShannonFano filePath) encodedInput
+    writeStringTo (fileNameToSimple filePath) simplyEncodedInput
 
     printfn "Decoding"
 
