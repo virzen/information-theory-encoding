@@ -104,10 +104,6 @@ let readText filename = File.ReadAllText filename
 let binaryToByte (b : System.String) = Convert.ToInt32(string b, 2)
 
 let findFirstSymbolFromDictionary (dictionary : ReverseDictionary) (characters : char list) : Sign * (char list) =
-    let mutable found = false
-    let mutable result = 0 |> byte
-    let mutable numOfDigits = 1
-
     let rec loop triedChars symbols : Sign * char list =
         match symbols with 
         | char::rest ->
