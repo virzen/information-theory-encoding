@@ -31,6 +31,12 @@ let joinStringsWith (separator : string) (iterable : seq<string>) = String.Join(
 let (./.) x y =
     ((x |> float) / (y |> float))
 
+let mapFirst (f : 'a -> 'c) ((a, b) : 'a * 'b) : 'c * 'b =
+    (f a, b)
+
+let second ((a, b) : 'a * 'b) : 'b =
+    b
+
 
 module Dictionary = 
     let empty =
@@ -74,8 +80,11 @@ let byteToBinaryOfWordLength wordLength =
     >> (padWithZeros wordLength)
 
 let encode (dictionary : Dictionary) (signs : Sign []) =
+    let encodeSign (sign : Sign) : Codeword = 
+        Map.find sign dictionary
+
     signs
-    |> Array.map (fun sign -> Map.find sign dictionary)
+    |> Array.map encodeSign
     |> String.concat ""
 
 let simpleDictionary : Dictionary =
@@ -142,12 +151,6 @@ let writeBytesTo filename bytes = File.WriteAllBytes(filename, bytes)
 
 
 let shannonFano (bytes : byte []) : EncodingTree =
-    let mapFirst (f : 'a -> 'c) ((a, b) : 'a * 'b) : 'c * 'b =
-        (f a, b)
-
-    let second ((a, b) : 'a * 'b) : 'b =
-        b
-
     let balancedSplit (signsWithCounts : (Sign * int) []) : (Sign * int) [] * (Sign * int) [] = 
         let mutable minDiff = System.Int32.MaxValue;
         let mutable index = -1;
